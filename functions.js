@@ -32,29 +32,33 @@ const action = (type, db, text) => {
   }
   if (type === 'remove') {
     removedItem = db[resultList.list]
-      .find(item => item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
+      .find(item => 
+        item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
     db[resultList.list] = db[resultList.list]
-      .filter(item => !item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
+      .filter(item => 
+        !item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
   }
   return { newDb: db, list: resultList.list, item: newTrimmedText, removedItem }
 }
 
-export const createList = (array) => {
-  let list = ''
+const createListString = (listName, array) => {
+  let list = ``
   array.forEach((item, index) => list += (index + 1 + '. ' + item + "\n"))
   return list
 }
 
-export const showList = (bot, chat_id, text, db) => {
+export const showList = async (bot, chat_id, text, db) => {
+  const listName = text[0].toUpperCase() + text.slice(1)
   if (db[text.toLowerCase()]) {
-    const list = createList(db[text.toLowerCase()])
+    const list = createListString(listName, db[text.toLowerCase()])
     if (list.length) {
-      bot.sendMessage(chat_id, createList(db[text.toLowerCase()]))
+      await bot.sendMessage(chat_id, listName + ':')
+      bot.sendMessage(chat_id, list)
     } else {
-      bot.sendMessage(chat_id, `В списке "${text}" нет записей. Пример добавления записи: "добавить ${text} ..."`)
+      bot.sendMessage(chat_id, `В списке "${listName}" нет записей. Пример добавления записи: "добавить ${text} ..."`)
     }
   } else {
-    bot.sendMessage(chat_id, `Не найдено списка "${text}". Пример создания списка: "создать список ..."`)
+    bot.sendMessage(chat_id, `Не найдено списка "${listName}". Пример создания списка: "создать список ..."`)
   }
 }
 

@@ -25,21 +25,35 @@ bot.on("message", async (message) => {
     const db = JSON.parse(dbData)
     const text = message.text.toLowerCase()
 
+    const commands = [
+      // {command: 'create_list', description: 'Добавить новый список'},
+      {command: 'show_lists', description: 'Показать все списки'}
+    ]
+
+    bot.setMyCommands(commands)
+
     // SHOW ALL LISTS
-    if (text.includes('списки')) {
+    if (text.includes('списки') || text === '/show_lists') {
       showAllLists(bot, chat_id, db)
       return;
     }
 
     // CREATE A NEW LIST
     if (text.includes('добавить список')) {
-      createNewList(bot, chat_id, db, db_path, text)
+      createNewList(bot, chat_id, db, db_path, text, commands)
       return;
     }
 
     // DELETE A LIST
     if (text.includes('удалить список')) {
       deleteList(bot, chat_id, db, db_path, text)
+      return;
+    }
+
+    // SHOW LIST BY BUTTON CLICK
+    if (text.includes('list')) {
+      const listName = Object.keys(db)[text.split('')[text.split('').length - 1] - 1]
+      showList(bot, chat_id, listName, db)
       return;
     }
 

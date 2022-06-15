@@ -40,7 +40,7 @@ bot.on("message", async (message) => {
 
     // CREATE A NEW LIST
     if (text.includes('добавить список')) {
-      createNewList(bot, chat_id, db, db_path, text, commands)
+      createNewList(bot, chat_id, db, db_path, text)
       return;
     }
 

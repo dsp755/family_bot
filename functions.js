@@ -1,4 +1,4 @@
-import { writeFile } from 'fs'
+import { writeFile, readFile } from 'fs'
 
 const action = (type, db, text) => {
   let trimmedText;
@@ -43,6 +43,42 @@ const action = (type, db, text) => {
   return { newDb: db, list: resultList.list, item: newTrimmedText, removedItem }
 }
 
+export const createPassword = (message) => {
+  const listName = message.text.toLowerCase().split(' ').slice(1).join().trim()
+  try {
+    // CREATE USER
+    writeFile(
+      `../DB/bot_pulling_db/users/${message.from.id}.json`, 
+      JSON.stringify({ 
+      name: message.from.first_name + ' ' + message.from.last_name,
+      language: message.from.language_code,
+      password: listName,
+      last_message: message.text
+    }),
+    (error) => {
+      if (error) {
+        console.log('An error has occurred ', error);
+        return;
+      }
+    }
+  );
+    // CHECK IF A DATABASE FOR THE PASSWORD EXISTS
+    readFileSync(`../DB/bot_pulling_db/lists/${listName}.json`)
+  } catch(err) {
+    // CREATE NEW DATABASE WITH THE PASSWORD AS A NAME
+    writeFile(
+      `../DB/bot_pulling_db/lists/${listName}.json`, 
+      JSON.stringify({}),
+      (error) => {
+        if (error) {
+          console.log('An error has occurred ', error);
+          return;
+        }
+      }
+    )
+  } 
+}
+
 const createListString = (listName, array) => {
   let list = ``
   array.forEach((item, index) => list += (index + 1 + '. ' + item + "\n"))
@@ -70,30 +106,64 @@ export const showList = async (bot, chat_id, text, db) => {
 }
 
 export const showAllLists = (bot, chat_id, db) => {
+  let userLists;
   const noListsText = 'Нет активных списков. Пример сообщения для добавления списка: "добавить список фильмы".'
-  let lists = []
-  Object.keys(db).forEach((item) => {
-    lists.push([{text: item[0].toUpperCase() + item.slice(1), callback_data: item}])
-  })
-  const options = {
-    reply_markup: JSON.stringify({
-      keyboard: lists
+  try {
+    userLists = readFileSync(`../DB/bot_pulling_db/users/${chat_id}.json`)
+    let lists = []
+    Object.keys(db).forEach((item) => {
+      lists.push([{text: item[0].toUpperCase() + item.slice(1), callback_data: item}])
     })
-  };
-  bot.sendMessage(chat_id, `${lists.length ? 'Выберите список:' : noListsText}`, options);
+    const options = {
+      reply_markup: JSON.stringify({
+        keyboard: lists
+      })
+    };
+    bot.sendMessage(chat_id, 'Выберите список:', options);
+  } catch(err) {
+    bot.sendMessage(chat_id, noListsText);
+  }
 }
 
-export const createNewList = (bot, chat_id, db, db_path, text) => {
+export const createNewList = async (bot, chat_id, text) => {
   const listName = text.split(' ').splice(2).join(' ').trim()
   if (listName) {
-    const dbWithNewList = { ...db, [listName]: [] }
-    writeFile(db_path, JSON.stringify(dbWithNewList), (error) => {
-      if (error) {
-        console.log('An error has occurred ', error);
-        return;
-      }
-    });
-    bot.sendMessage(chat_id, `Добавлен новый список "${listName}".`)
+    try {
+      readFile(
+        `../DB/bot_pulling_db/users/${chat_id}.json`,
+        'utf8',
+        async (err, data) => {
+          if (err) {
+            console.log(err)
+          } else {
+            const user = await JSON.parse(data)
+            const password = await user.password
+            readFile(
+              `../DB/bot_pulling_db/lists/${password}.json`, 
+              'utf8', 
+              async (err, data) => { 
+                if (err) {
+                  console.log(err)
+                }
+                const db = await JSON.parse(data) 
+                const dbWithNewList = { ...db, [listName]: [] }
+                writeFile(
+                  `../DB/bot_pulling_db/lists/${password}.json`, 
+                  JSON.stringify(dbWithNewList), 
+                  (error) => {
+                    if (error) {
+                      console.log('An error has occurred ', error);
+                      return;
+                    }
+                });
+                bot.sendMessage(chat_id, `Добавлен новый список "${listName}".`)
+              })
+          }
+        })
+    } catch(err) {
+      console.log(err)
+      bot.sendMessage(chat_id, `Ошибка создания списка.`)
+    }
   }
 }
 

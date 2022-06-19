@@ -64,10 +64,16 @@ export const showList = async (bot, chat_id, text, db) => {
 
 export const showAllLists = (bot, chat_id, db) => {
   const noListsText = 'Нет активных списков. Пример сообщения для добавления списка: "добавить список фильмы".'
-  let allLists = ''
-  Object.keys(db).forEach((item, index) => 
-    allLists += (item[0].toUpperCase() + item.slice(1) + ': ' + db[item].length + "\n"))
-  bot.sendMessage(chat_id, allLists || noListsText)
+  let lists = []
+  Object.keys(db).forEach((item) => {
+    lists.push([{text: item[0].toUpperCase() + item.slice(1), callback_data: `${item}`}])
+  })
+  const options = {
+    reply_markup: JSON.stringify({
+      keyboard: lists
+    })
+  };
+  bot.sendMessage(chat_id, `${lists.length ? 'Выберите список:' : noListsText}`, options);
 }
 
 export const createNewList = (bot, chat_id, db, db_path, text) => {

@@ -27,16 +27,18 @@ const action = (type, db, text) => {
   const newTrimmedText = trimmedText.split(' ').splice(1).join(' ')
   console.log('newTrimmedText: ', newTrimmedText);
   
-  if (type === 'add') {
-    db[resultList.list] = db[resultList.list].concat(newTrimmedText)
-  }
-  if (type === 'remove') {
-    removedItem = db[resultList.list]
-      .find(item => 
-        item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
-    db[resultList.list] = db[resultList.list]
-      .filter(item => 
-        !item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
+  if (newTrimmedText) {
+    if (type === 'add') {
+      db[resultList.list] = db[resultList.list].concat(newTrimmedText)
+    }
+    if (type === 'remove') {
+      removedItem = db[resultList.list]
+        .find(item => 
+          item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
+      db[resultList.list] = db[resultList.list]
+        .filter(item => 
+          !item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
+    }
   }
   return { newDb: db, list: resultList.list, item: newTrimmedText, removedItem }
 }
@@ -55,13 +57,13 @@ export const showList = async (bot, chat_id, text, db) => {
     const options = {
       reply_markup: JSON.stringify({
         keyboard: [
-          [{text: 'Добавить запись', callback_data: `1`}],
-          [{text: 'Удалить запись', callback_data: `1`}],
-          [{text: 'Назад', callback_data: `/lists`}]
+          [{text: 'Добавить запись', callback_data: `Добавить запись `}],
+          [{text: 'Удалить запись', callback_data: `Удалить запись `}],
+          [{text: 'Списки', callback_data: `/lists`}]
         ]
       })
     };
-    bot.sendMessage(chat_id, `Выберите действие:`, options);
+    await bot.sendMessage(chat_id, `Выберите действие:`, options);
   } else {
     bot.sendMessage(chat_id, `Не найдено списка "${listName}". Пример создания списка: "создать список ..."`)
   }
@@ -71,7 +73,7 @@ export const showAllLists = (bot, chat_id, db) => {
   const noListsText = 'Нет активных списков. Пример сообщения для добавления списка: "добавить список фильмы".'
   let lists = []
   Object.keys(db).forEach((item) => {
-    lists.push([{text: item[0].toUpperCase() + item.slice(1), callback_data: `${item}`}])
+    lists.push([{text: item[0].toUpperCase() + item.slice(1), callback_data: item}])
   })
   const options = {
     reply_markup: JSON.stringify({
@@ -83,14 +85,16 @@ export const showAllLists = (bot, chat_id, db) => {
 
 export const createNewList = (bot, chat_id, db, db_path, text) => {
   const listName = text.split(' ').splice(2).join(' ').trim()
-  const dbWithNewList = { ...db, [listName]: [] }
-  writeFile(db_path, JSON.stringify(dbWithNewList), (error) => {
-    if (error) {
-      console.log('An error has occurred ', error);
-      return;
-    }
-  });
-  bot.sendMessage(chat_id, `Добавлен новый список "${listName}".`)
+  if (listName) {
+    const dbWithNewList = { ...db, [listName]: [] }
+    writeFile(db_path, JSON.stringify(dbWithNewList), (error) => {
+      if (error) {
+        console.log('An error has occurred ', error);
+        return;
+      }
+    });
+    bot.sendMessage(chat_id, `Добавлен новый список "${listName}".`)
+  }
 }
 
 export const deleteList = (bot, chat_id, db, db_path, text) => {
@@ -112,24 +116,28 @@ export const deleteList = (bot, chat_id, db, db_path, text) => {
 
 export const addItem = async (bot, chat_id, db, db_path, text) => {
   const { newDb, list, item } = action('add', db, text)
-  await bot.sendMessage(chat_id, `"${item}" добавлено в список ${list}`)
-  writeFile(db_path, JSON.stringify(newDb), (error) => {
-    if (error) {
-      console.log('An error has occurred ', error);
-      return;
-    }
-  });
+  if (item) {
+    await bot.sendMessage(chat_id, `"${item}" добавлено в список ${list}`)
+    writeFile(db_path, JSON.stringify(newDb), (error) => {
+      if (error) {
+        console.log('An error has occurred ', error);
+        return;
+      }
+    });
+  }
   showList(bot, chat_id, list, newDb)
 }
 
 export const removeItem = async (bot, chat_id, db, db_path, text) => {
   const { newDb, list, item, removedItem } = action('remove', db, text)
-  await bot.sendMessage(chat_id, `"${removedItem}" удалено из списка ${list}`)
-  writeFile(db_path, JSON.stringify(newDb), (error) => {
-    if (error) {
-      console.log('An error has occurred ', error);
-      return;
-    }
-  });
+  if (removedItem) {
+    await bot.sendMessage(chat_id, `"${removedItem}" удалено из списка ${list}`)
+    writeFile(db_path, JSON.stringify(newDb), (error) => {
+      if (error) {
+        console.log('An error has occurred ', error);
+        return;
+      }
+    });
+  }
   showList(bot, chat_id, list, newDb)
 }

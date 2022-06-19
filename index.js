@@ -77,3 +77,11 @@ bot.on("message", async (message) => {
     }
   }
 });
+
+bot.on("callback_query", (data) => {
+  // console.log('Callback DATA: ');
+  console.log(data);
+  // Get the callback data specified
+  // let callback_data = data.data
+  // bot.answerCallbackQuery(data.id, 'hello'); 
+});

@@ -51,12 +51,17 @@ export const showList = async (bot, chat_id, text, db) => {
   const listName = text[0].toUpperCase() + text.slice(1)
   if (db[text.toLowerCase()]) {
     const list = createListString(listName, db[text.toLowerCase()])
-    if (list.length) {
-      await bot.sendMessage(chat_id, listName + ':')
-      bot.sendMessage(chat_id, list)
-    } else {
-      bot.sendMessage(chat_id, `В списке "${listName}" нет записей. Пример добавления записи: "добавить ${text} ..."`)
-    }
+    await bot.sendMessage(chat_id, list || `В списке "${listName}" нет записей.`)
+    const options = {
+      reply_markup: JSON.stringify({
+        keyboard: [
+          [{text: 'Добавить запись', callback_data: `1`}],
+          [{text: 'Удалить запись', callback_data: `1`}],
+          [{text: 'Назад', callback_data: `/lists`}]
+        ]
+      })
+    };
+    bot.sendMessage(chat_id, `Выберите действие:`, options);
   } else {
     bot.sendMessage(chat_id, `Не найдено списка "${listName}". Пример создания списка: "создать список ..."`)
   }

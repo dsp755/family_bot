@@ -1,4 +1,58 @@
-import { writeFile, readFile } from 'fs'
+import { writeFile, readFileSync, promises } from 'fs'
+
+export const getUser = async (chat_id) => {
+  let user;
+  const getUserData = () => promises.readFile(`../DB/bot_pulling_db/users/${chat_id}.json`, 'utf-8')
+    .then(data => JSON.parse(data))
+    .then(data => { user = data })
+  await getUserData();
+  return user;
+}
+
+export const getDb = async (password) => {
+  let db;
+  const getDbData = () => promises.readFile(`../DB/bot_pulling_db/lists/${password}.json`, 'utf-8')
+  .then(data => JSON.parse(data))
+  .then(data => { db = data })
+  await getDbData();
+  return db;
+}
+
+export const createPassword = (message) => {
+  const listName = message.text.toLowerCase().split(' ').slice(1).join().trim()
+  try {
+    // CREATE USER
+    writeFile(
+      `../DB/bot_pulling_db/users/${message.from.id}.json`, 
+      JSON.stringify({ 
+      name: message.from.first_name + ' ' + message.from.last_name,
+      language: message.from.language_code,
+      password: listName,
+      last_message: message.text
+    }),
+    (error) => {
+      if (error) {
+        console.log('An error has occurred ', error);
+        return;
+      }
+    }
+  );
+    // CHECK IF A DATABASE FOR THE PASSWORD EXISTS
+    readFileSync(`../DB/bot_pulling_db/lists/${listName}.json`)
+  } catch(err) {
+    // CREATE NEW DATABASE WITH THE PASSWORD AS A NAME
+    writeFile(
+      `../DB/bot_pulling_db/lists/${listName}.json`, 
+      JSON.stringify({}),
+      (error) => {
+        if (error) {
+          console.log('An error has occurred ', error);
+          return;
+        }
+      }
+    )
+  } 
+}
 
 const action = (type, db, text) => {
   let trimmedText;
@@ -41,42 +95,6 @@ const action = (type, db, text) => {
     }
   }
   return { newDb: db, list: resultList.list, item: newTrimmedText, removedItem }
-}
-
-export const createPassword = (message) => {
-  const listName = message.text.toLowerCase().split(' ').slice(1).join().trim()
-  try {
-    // CREATE USER
-    writeFile(
-      `../DB/bot_pulling_db/users/${message.from.id}.json`, 
-      JSON.stringify({ 
-      name: message.from.first_name + ' ' + message.from.last_name,
-      language: message.from.language_code,
-      password: listName,
-      last_message: message.text
-    }),
-    (error) => {
-      if (error) {
-        console.log('An error has occurred ', error);
-        return;
-      }
-    }
-  );
-    // CHECK IF A DATABASE FOR THE PASSWORD EXISTS
-    readFileSync(`../DB/bot_pulling_db/lists/${listName}.json`)
-  } catch(err) {
-    // CREATE NEW DATABASE WITH THE PASSWORD AS A NAME
-    writeFile(
-      `../DB/bot_pulling_db/lists/${listName}.json`, 
-      JSON.stringify({}),
-      (error) => {
-        if (error) {
-          console.log('An error has occurred ', error);
-          return;
-        }
-      }
-    )
-  } 
 }
 
 const createListString = (listName, array) => {
@@ -125,44 +143,20 @@ export const showAllLists = (bot, chat_id, db) => {
   }
 }
 
-export const createNewList = async (bot, chat_id, text) => {
+export const createNewList = async (bot, id, password, text) => {
+  let db;
   const listName = text.split(' ').splice(2).join(' ').trim()
   if (listName) {
     try {
-      readFile(
-        `../DB/bot_pulling_db/users/${chat_id}.json`,
-        'utf8',
-        async (err, data) => {
-          if (err) {
-            console.log(err)
-          } else {
-            const user = await JSON.parse(data)
-            const password = await user.password
-            readFile(
-              `../DB/bot_pulling_db/lists/${password}.json`, 
-              'utf8', 
-              async (err, data) => { 
-                if (err) {
-                  console.log(err)
-                }
-                const db = await JSON.parse(data) 
-                const dbWithNewList = { ...db, [listName]: [] }
-                writeFile(
-                  `../DB/bot_pulling_db/lists/${password}.json`, 
-                  JSON.stringify(dbWithNewList), 
-                  (error) => {
-                    if (error) {
-                      console.log('An error has occurred ', error);
-                      return;
-                    }
-                });
-                bot.sendMessage(chat_id, `Добавлен новый список "${listName}".`)
-              })
-          }
-        })
+      db = await getDb(password)
+      const dbWithNewList = { ...db, [listName]: [] }
+      const addList = async () => {
+        promises.writeFile(`../DB/bot_pulling_db/lists/${password}.json`, JSON.stringify(dbWithNewList));
+      }
+      await addList();
+      bot.sendMessage(id, `Добавлен новый список "${listName}".`)
     } catch(err) {
-      console.log(err)
-      bot.sendMessage(chat_id, `Ошибка создания списка.`)
+      bot.sendMessage(id, `Ошибка создания списка.`)
     }
   }
 }

@@ -5,10 +5,12 @@ import {
   getUser,
   getDb,
   createPassword,
+  saveLastMessage,
   showList, 
   showAllLists, 
   createNewList, 
   deleteList,
+  addItemByButton,
   addItem,
   removeItem
 } from './functions.js'
@@ -31,13 +33,14 @@ bot.on("message", async (message) => {
     
     // CREATE PASSWORD
     if (message.text.includes('пароль')) {
-      createPassword(message)
+      createPassword(dbPath, message)
       bot.sendMessage(message.from.id, `Вы вошли под паролем ${message.text.replace('пароль ', '')}`)
       return;
     }
 
+    
     const chat_id = message.from.id
-    const {name, password, lastMessage, language} = await getUser(dbPath, chat_id)
+    const {name, password, language} = await getUser(dbPath, chat_id)
     const db = await getDb(dbPath, password)
     const text = message.text.toLowerCase()
     const userJson = readFileSync(`${dbPath}/users/${chat_id}.json`)
@@ -79,20 +82,29 @@ bot.on("message", async (message) => {
       }
   
       // SHOW LIST
-      if (Object.keys(userLists).includes(text) || text.split(' ').length === 1) {
+      if (Object.keys(userLists).includes(text)) {
         showList(bot, chat_id, text, userLists)
         return;
       }
+
+      // ADD ITEM BY BUTTON
+      // if (user.lastMessage.includes('добавить запись в список')) {    
+      //   addItemByButton(bot, chat_id, user.lastMessage, password, userLists, dbPath)
+      //   return;
+      // }
   
-      // ADD ITEM TO A LIST
+      // ADD ITEM BY TYPING IN
       if (text.includes('добавить')) {    
+        console.log(user.lastMessage)
         addItem(bot, chat_id, password, userLists, dbPath, text)
+        saveLastMessage(`${dbPath}/users/${chat_id}.json`, user, text)
         return;
       }
   
       // REMOVE ITEM FROM A LIST
       if (text.includes('удалить')) {    
         removeItem(bot, chat_id, password, userLists, dbPath, text)
+        saveLastMessage(`${dbPath}/users/${chat_id}.json`, user, text)
         return;
       }
     }

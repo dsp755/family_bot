@@ -18,7 +18,7 @@ export const getDb = async (dbPath, password) => {
   return db;
 }
 
-export const createPassword = (message) => {
+export const createPassword = (dbPath, message) => {
   const listName = message.text.toLowerCase().split(' ').slice(1).join().trim()
   try {
     // CREATE USER
@@ -52,6 +52,20 @@ export const createPassword = (message) => {
       }
     )
   } 
+}
+
+export const saveLastMessage = (path, user, text) => {
+  user.lastMessage = text
+  writeFile(
+    path, 
+    JSON.stringify(user),
+    (error) => {
+      if (error) {
+        console.log('An error has occurred ', error);
+        return;
+      }
+    }
+  )
 }
 
 const action = (type, userLists, text) => {
@@ -176,7 +190,7 @@ export const deleteList = (bot, chat_id, dbPath, userLists, password, text) => {
 export const addItem = async (bot, chat_id, password, userLists, dbPath, text) => {
   const { newDb, list, item } = action('add', userLists, text)
   if (item) {
-    await bot.sendMessage(chat_id, `"${item}" добавлено в список ${list}`)
+    await bot.sendMessage(chat_id, `Вы добавили "${item}" в список ${list}`)
     writeFile(`${dbPath}/lists/${password}.json`, JSON.stringify(newDb), (error) => {
       if (error) {
         console.log('An error has occurred ', error);
@@ -187,10 +201,22 @@ export const addItem = async (bot, chat_id, password, userLists, dbPath, text) =
   showList(bot, chat_id, list, newDb)
 }
 
+export const addItemByButton = (bot, chat_id, lastMessage, password, userLists, dbPath, item) => {
+  const listName = lastMessage.replace('Добавить запись в список ', '').toLowerCase()
+  console.log('LIST NAME : ')
+  console.log(listName)
+  // writeFile(`${dbPath}/lists/${password}.json`, JSON.stringify(newDb), (error) => {
+  //   if (error) {
+  //     console.log('An error has occurred ', error);
+  //     return;
+  //   }
+  // });
+}
+
 export const removeItem = async (bot, chat_id, password, userLists, dbPath, text) => {
   const { newDb, list, item, removedItem } = action('remove', userLists, text)
   if (removedItem) {
-    await bot.sendMessage(chat_id, `"${removedItem}" удалено из списка ${list}`)
+    await bot.sendMessage(chat_id, `Вы удалили "${removedItem}" из списка ${list}`)
     writeFile(`${dbPath}/lists/${password}.json`, JSON.stringify(newDb), (error) => {
       if (error) {
         console.log('An error has occurred ', error);

@@ -79,8 +79,7 @@ bot.on("message", async (message) => {
       }
   
       // SHOW LIST
-      // If message text is one word
-      if (text.split(' ').length === 1) {
+      if (Object.keys(userLists).includes(text) || text.split(' ').length === 1) {
         showList(bot, chat_id, text, userLists)
         return;
       }

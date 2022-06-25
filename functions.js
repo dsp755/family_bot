@@ -107,17 +107,16 @@ export const showList = async (bot, chat_id, text, userLists) => {
   const listName = text[0].toUpperCase() + text.slice(1)
   if (userLists[text.toLowerCase()]) {
     const list = createListString(userLists[text.toLowerCase()])
-    await bot.sendMessage(chat_id, list || `В списке "${listName}" нет записей.`)
     const options = {
       reply_markup: JSON.stringify({
         keyboard: [
-          [{text: 'Добавить запись', callback_data: `Добавить запись `}],
-          [{text: 'Удалить запись', callback_data: `Удалить запись `}],
-          [{text: 'Назад к спискам', callback_data: `/lists`}]
+          [{text: `Добавить запись в список ${listName}`}],
+          [{text: `Удалить запись из списка ${listName}`}],
+          [{text: 'Назад к спискам'}]
         ]
       })
     };
-    await bot.sendMessage(chat_id, `Выберите действие`, options);
+    await bot.sendMessage(chat_id, list || `В списке "${listName}" нет записей.`, options)
   } else {
     bot.sendMessage(chat_id, `Не найдено списка "${listName}". Пример создания списка: "создать список ..."`)
   }

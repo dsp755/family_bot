@@ -37,7 +37,7 @@ bot.on("message", async (message) => {
     }
 
     const chat_id = message.from.id
-    const {name, password, last_message, language} = await getUser(dbPath, chat_id)
+    const {name, password, lastMessage, language} = await getUser(dbPath, chat_id)
     const db = await getDb(dbPath, password)
     const text = message.text.toLowerCase()
     const userJson = readFileSync(`${dbPath}/users/${chat_id}.json`)
@@ -54,20 +54,20 @@ bot.on("message", async (message) => {
       bot.setMyCommands(commands)
     
       // SHOW ALL LISTS
-      if (text.includes('списки') || text === '/show_lists') {
+      if (text.includes('списки') || text.includes('назад к спискам') || text === '/show_lists') {
         showAllLists(bot, message.from.id, userLists)
         return;
       }
     
       // CREATE A NEW LIST
       if (text.includes('добавить список')) {
-        await createNewList(bot, chat_id, password, text)
+        await createNewList(bot, chat_id, dbPath, userLists, password, text)
         return;
       }
   
       // DELETE A LIST
       if (text.includes('удалить список')) {
-        deleteList(bot, chat_id, db, dbPath, text)
+        deleteList(bot, chat_id, dbPath, userLists, password, text)
         return;
       }
   
@@ -87,23 +87,15 @@ bot.on("message", async (message) => {
   
       // ADD ITEM TO A LIST
       if (text.includes('добавить')) {    
-        addItem(bot, chat_id, user, userLists, dbPath, text)
+        addItem(bot, chat_id, password, userLists, dbPath, text)
         return;
       }
   
       // REMOVE ITEM FROM A LIST
       if (text.includes('удалить')) {    
-        removeItem(bot, chat_id, db, dbPath, text)
+        removeItem(bot, chat_id, password, userLists, dbPath, text)
         return;
       }
     }
   }
-});
-
-bot.on("callback_query", (data) => {
-  // console.log('Callback DATA: ');
-  console.log(data);
-  // Get the callback data specified
-  // let callback_data = data.data
-  // bot.answerCallbackQuery(data.id, 'hello'); 
 });

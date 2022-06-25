@@ -117,21 +117,16 @@ export const showList = async (bot, chat_id, text, db) => {
         ]
       })
     };
-    await bot.sendMessage(chat_id, `Выберите действие:`, options);
+    await bot.sendMessage(chat_id, `Выберите действие`, options);
   } else {
     bot.sendMessage(chat_id, `Не найдено списка "${listName}". Пример создания списка: "создать список ..."`)
   }
 }
 
-export const showAllLists = (bot, chat_id, db) => {
-  let userLists;
+export const showAllLists = (bot, chat_id, userLists) => {
   const noListsText = 'Нет активных списков. Пример сообщения для добавления списка: "добавить список фильмы".'
   try {
     const lists = [];
-    const userJson = readFileSync(`../DB/bot_pulling_db/users/${chat_id}.json`)
-    const user = JSON.parse(userJson)
-    const userListsJson = readFileSync(`../DB/bot_pulling_db/lists/${user.password}.json`)
-    const userLists = JSON.parse(userListsJson)
     Object.keys(userLists).forEach((item) => {
       lists.push([{text: item[0].toUpperCase() + item.slice(1), callback_data: item}])
     })
@@ -140,7 +135,7 @@ export const showAllLists = (bot, chat_id, db) => {
         keyboard: lists
       })
     };
-    bot.sendMessage(chat_id, 'Выберите список:', options);
+    bot.sendMessage(chat_id, 'Выберите список', options);
   } catch(err) {
     bot.sendMessage(chat_id, noListsText);
   }

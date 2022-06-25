@@ -39,6 +39,10 @@ bot.on("message", async (message) => {
     const {name, password, last_message, language} = await getUser(chat_id)
     const db = await getDb(password)
     const text = message.text.toLowerCase()
+    const userJson = readFileSync(`../DB/bot_pulling_db/users/${chat_id}.json`)
+    const user = JSON.parse(userJson)
+    const userListsJson = readFileSync(`../DB/bot_pulling_db/lists/${user.password}.json`)
+    const userLists = JSON.parse(userListsJson)
 
     if (db) {
       
@@ -50,7 +54,7 @@ bot.on("message", async (message) => {
     
       // SHOW ALL LISTS
       if (text.includes('списки') || text === '/show_lists') {
-        showAllLists(bot, message.from.id)
+        showAllLists(bot, message.from.id, userLists)
         return;
       }
     

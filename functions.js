@@ -1,17 +1,17 @@
 import { writeFile, readFileSync, promises } from 'fs'
 
-export const getUser = async (chat_id) => {
+export const getUser = async (dbPath, chat_id) => {
   let user;
-  const getUserData = () => promises.readFile(`../DB/bot_pulling_db/users/${chat_id}.json`, 'utf-8')
+  const getUserData = () => promises.readFile(`${dbPath}/users/${chat_id}.json`, 'utf-8')
     .then(data => JSON.parse(data))
     .then(data => { user = data })
   await getUserData();
   return user;
 }
 
-export const getDb = async (password) => {
+export const getDb = async (dbPath, password) => {
   let db;
-  const getDbData = () => promises.readFile(`../DB/bot_pulling_db/lists/${password}.json`, 'utf-8')
+  const getDbData = () => promises.readFile(`${dbPath}/lists/${password}.json`, 'utf-8')
   .then(data => JSON.parse(data))
   .then(data => { db = data })
   await getDbData();
@@ -54,7 +54,7 @@ export const createPassword = (message) => {
   } 
 }
 
-const action = (type, db, text) => {
+const action = (type, userLists, text) => {
   let trimmedText;
   let removedItem;
   if (type === 'add') {
@@ -64,9 +64,9 @@ const action = (type, db, text) => {
     trimmedText = text.replace(`удалить `, '')
   }
   const resultList = { list: '', matchLetters: 0 }
-  Object.keys(db).forEach(dbList => {
+  Object.keys(userLists).forEach(list => {
     let matchLetters = 0;
-    dbList.split('').forEach(listLetter => {
+    list.split('').forEach(listLetter => {
       trimmedText.split(' ')[0].split('').forEach(textLetter => {
         if (textLetter === listLetter) {
           matchLetters += 1;
@@ -74,7 +74,7 @@ const action = (type, db, text) => {
       })
     })
     if (matchLetters > resultList.matchLetters) {
-      resultList.list = dbList
+      resultList.list = list
       resultList.matchLetters = matchLetters
     }
   })
@@ -82,14 +82,14 @@ const action = (type, db, text) => {
   console.log('newTrimmedText: ', newTrimmedText);
   
   if (newTrimmedText) {
-    if (type === 'add') {
-      db[resultList.list] = db[resultList.list].concat(newTrimmedText)
+    if (type === 'add' && !userLists[resultList.list]) {
+      userLists[resultList.list] = userLists[resultList.list].concat(newTrimmedText)
     }
     if (type === 'remove') {
-      removedItem = db[resultList.list]
+      removedItem = userLists[resultList.list]
         .find(item => 
-          item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
-      db[resultList.list] = db[resultList.list]
+          item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]));
+          userLists[resultList.list] = userLists[resultList.list]
         .filter(item => 
           !item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
     }
@@ -103,10 +103,10 @@ const createListString = (listName, array) => {
   return list
 }
 
-export const showList = async (bot, chat_id, text, db) => {
+export const showList = async (bot, chat_id, text, userLists) => {
   const listName = text[0].toUpperCase() + text.slice(1)
-  if (db[text.toLowerCase()]) {
-    const list = createListString(listName, db[text.toLowerCase()])
+  if (userLists[text.toLowerCase()]) {
+    const list = createListString(listName, userLists[text.toLowerCase()])
     await bot.sendMessage(chat_id, list || `В списке "${listName}" нет записей.`)
     const options = {
       reply_markup: JSON.stringify({
@@ -159,7 +159,7 @@ export const createNewList = async (bot, id, password, text) => {
   }
 }
 
-export const deleteList = (bot, chat_id, db, db_path, text) => {
+export const deleteList = (bot, chat_id, db, dbPath, text) => {
   const listName = text.split(' ').splice(2).join(' ').trim()
   if (!Object.keys(db).includes(listName)) {
     bot.sendMessage(chat_id, `Список "${listName}" не найден.`)
@@ -167,7 +167,7 @@ export const deleteList = (bot, chat_id, db, db_path, text) => {
   }
   const dbCopy = { ...db }
   delete dbCopy[listName]
-  writeFile(db_path, JSON.stringify(dbCopy), (error) => {
+  writeFile(dbPath, JSON.stringify(dbCopy), (error) => {
     if (error) {
       console.log('An error has occurred ', error);
       return;
@@ -176,11 +176,11 @@ export const deleteList = (bot, chat_id, db, db_path, text) => {
   bot.sendMessage(chat_id, `Список "${listName}" удален.`)
 }
 
-export const addItem = async (bot, chat_id, db, db_path, text) => {
-  const { newDb, list, item } = action('add', db, text)
+export const addItem = async (bot, chat_id, userLists, dbPath, text) => {
+  const { newDb, list, item } = action('add', userLists, text)
   if (item) {
     await bot.sendMessage(chat_id, `"${item}" добавлено в список ${list}`)
-    writeFile(db_path, JSON.stringify(newDb), (error) => {
+    writeFile(dbPath, JSON.stringify(newDb), (error) => {
       if (error) {
         console.log('An error has occurred ', error);
         return;
@@ -190,11 +190,11 @@ export const addItem = async (bot, chat_id, db, db_path, text) => {
   showList(bot, chat_id, list, newDb)
 }
 
-export const removeItem = async (bot, chat_id, db, db_path, text) => {
+export const removeItem = async (bot, chat_id, db, dbPath, text) => {
   const { newDb, list, item, removedItem } = action('remove', db, text)
   if (removedItem) {
     await bot.sendMessage(chat_id, `"${removedItem}" удалено из списка ${list}`)
-    writeFile(db_path, JSON.stringify(newDb), (error) => {
+    writeFile(dbPath, JSON.stringify(newDb), (error) => {
       if (error) {
         console.log('An error has occurred ', error);
         return;

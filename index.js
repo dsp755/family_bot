@@ -17,7 +17,7 @@ dotenv.config()
 
 const TOKEN = process.env.TOKEN;
 const bot = new telegramBot(TOKEN, { polling: true });
-const db_path = '../DB/bot_pulling_db'
+const dbPath = '../DB/bot_pulling_db'
 
 bot.on("message", async (message) => {
   console.log(message);
@@ -32,16 +32,17 @@ bot.on("message", async (message) => {
     // CREATE PASSWORD
     if (message.text.includes('пароль')) {
       createPassword(message)
+      bot.sendMessage(message.from.id, `Вы вошли под паролем ${message.text.replace('пароль ', '')}`)
       return;
     }
 
     const chat_id = message.from.id
-    const {name, password, last_message, language} = await getUser(chat_id)
-    const db = await getDb(password)
+    const {name, password, last_message, language} = await getUser(dbPath, chat_id)
+    const db = await getDb(dbPath, password)
     const text = message.text.toLowerCase()
-    const userJson = readFileSync(`../DB/bot_pulling_db/users/${chat_id}.json`)
+    const userJson = readFileSync(`${dbPath}/users/${chat_id}.json`)
     const user = JSON.parse(userJson)
-    const userListsJson = readFileSync(`../DB/bot_pulling_db/lists/${user.password}.json`)
+    const userListsJson = readFileSync(`${dbPath}/lists/${user.password}.json`)
     const userLists = JSON.parse(userListsJson)
 
     if (db) {
@@ -66,33 +67,33 @@ bot.on("message", async (message) => {
   
       // DELETE A LIST
       if (text.includes('удалить список')) {
-        deleteList(bot, chat_id, db, db_path, text)
+        deleteList(bot, chat_id, db, dbPath, text)
         return;
       }
   
       // SHOW LIST BY BUTTON CLICK
       if (text.includes('list')) {
         const listName = Object.keys(db)[text.split('')[text.split('').length - 1] - 1]
-        showList(bot, chat_id, listName, db)
+        showList(bot, chat_id, listName, userLists)
         return;
       }
   
       // SHOW LIST
       // If message text is one word
       if (text.split(' ').length === 1) {
-        showList(bot, chat_id, text, db)
+        showList(bot, chat_id, text, userLists)
         return;
       }
   
       // ADD ITEM TO A LIST
       if (text.includes('добавить')) {    
-        addItem(bot, chat_id, db, db_path, text)
+        addItem(bot, chat_id, userLists, dbPath, text)
         return;
       }
   
       // REMOVE ITEM FROM A LIST
       if (text.includes('удалить')) {    
-        removeItem(bot, chat_id, db, db_path, text)
+        removeItem(bot, chat_id, db, dbPath, text)
         return;
       }
     }

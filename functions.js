@@ -127,9 +127,12 @@ export const showAllLists = (bot, chat_id, db) => {
   let userLists;
   const noListsText = 'Нет активных списков. Пример сообщения для добавления списка: "добавить список фильмы".'
   try {
-    userLists = readFileSync(`../DB/bot_pulling_db/users/${chat_id}.json`)
-    let lists = []
-    Object.keys(db).forEach((item) => {
+    const lists = [];
+    const userJson = readFileSync(`../DB/bot_pulling_db/users/${chat_id}.json`)
+    const user = JSON.parse(userJson)
+    const userListsJson = readFileSync(`../DB/bot_pulling_db/lists/${user.password}.json`)
+    const userLists = JSON.parse(userListsJson)
+    Object.keys(userLists).forEach((item) => {
       lists.push([{text: item[0].toUpperCase() + item.slice(1), callback_data: item}])
     })
     const options = {

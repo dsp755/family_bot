@@ -82,7 +82,7 @@ const action = (type, userLists, text) => {
   console.log('newTrimmedText: ', newTrimmedText);
   
   if (newTrimmedText) {
-    if (type === 'add' && !userLists[resultList.list]) {
+    if (type === 'add' && userLists[resultList.list]) {
       userLists[resultList.list] = userLists[resultList.list].concat(newTrimmedText)
     }
     if (type === 'remove') {
@@ -94,7 +94,7 @@ const action = (type, userLists, text) => {
           !item.includes(newTrimmedText.split()[newTrimmedText.split().length - 1]))
     }
   }
-  return { newDb: db, list: resultList.list, item: newTrimmedText, removedItem }
+  return { newDb: userLists, list: resultList.list, item: newTrimmedText, removedItem }
 }
 
 const createListString = (listName, array) => {
@@ -176,11 +176,11 @@ export const deleteList = (bot, chat_id, db, dbPath, text) => {
   bot.sendMessage(chat_id, `Список "${listName}" удален.`)
 }
 
-export const addItem = async (bot, chat_id, userLists, dbPath, text) => {
+export const addItem = async (bot, chat_id, user, userLists, dbPath, text) => {
   const { newDb, list, item } = action('add', userLists, text)
   if (item) {
     await bot.sendMessage(chat_id, `"${item}" добавлено в список ${list}`)
-    writeFile(dbPath, JSON.stringify(newDb), (error) => {
+    writeFile(`${dbPath}/lists/${user.password}.json`, JSON.stringify(newDb), (error) => {
       if (error) {
         console.log('An error has occurred ', error);
         return;
@@ -194,7 +194,7 @@ export const removeItem = async (bot, chat_id, db, dbPath, text) => {
   const { newDb, list, item, removedItem } = action('remove', db, text)
   if (removedItem) {
     await bot.sendMessage(chat_id, `"${removedItem}" удалено из списка ${list}`)
-    writeFile(dbPath, JSON.stringify(newDb), (error) => {
+    writeFile(`${dbPath}/lists/${user.password}.json`, JSON.stringify(newDb), (error) => {
       if (error) {
         console.log('An error has occurred ', error);
         return;

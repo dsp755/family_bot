@@ -87,7 +87,7 @@ bot.on("message", async (message) => {
   
       // ADD ITEM TO A LIST
       if (text.includes('добавить')) {    
-        addItem(bot, chat_id, userLists, dbPath, text)
+        addItem(bot, chat_id, user, userLists, dbPath, text)
         return;
       }
   

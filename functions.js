@@ -187,7 +187,20 @@ export const deleteList = (bot, chat_id, dbPath, userLists, password, text) => {
   bot.sendMessage(chat_id, `Список "${listName}" удален.`)
 }
 
-export const addItem = async (bot, chat_id, password, userLists, dbPath, text) => {
+export const addItemByButton = (bot, chat_id, lastMessage, text, password, userLists, dbPath) => {
+  const listName = lastMessage.replace('добавить запись в список ', '')
+  userLists[listName].push(text)
+  writeFile(`${dbPath}/lists/${password}.json`, JSON.stringify(userLists), (error) => {
+    if (error) {
+      console.log('An error has occurred ', error);
+      return;
+    } else {
+      showList(bot, chat_id, listName, userLists)
+    }
+  });
+}
+
+export const addItemByInput = async (bot, chat_id, password, userLists, dbPath, text) => {
   const { newDb, list, item } = action('add', userLists, text)
   if (item) {
     await bot.sendMessage(chat_id, `Вы добавили "${item}" в список ${list}`)
@@ -201,19 +214,21 @@ export const addItem = async (bot, chat_id, password, userLists, dbPath, text) =
   showList(bot, chat_id, list, newDb)
 }
 
-export const addItemByButton = (bot, chat_id, lastMessage, password, userLists, dbPath, item) => {
-  const listName = lastMessage.replace('Добавить запись в список ', '').toLowerCase()
-  console.log('LIST NAME : ')
-  console.log(listName)
-  // writeFile(`${dbPath}/lists/${password}.json`, JSON.stringify(newDb), (error) => {
-  //   if (error) {
-  //     console.log('An error has occurred ', error);
-  //     return;
-  //   }
-  // });
+export const removeItemByButton = (bot, chat_id, lastMessage, text, password, userLists, dbPath) => {
+  const listName = lastMessage.replace('удалить запись из списка ', '')
+  userLists = { ...userLists, [listName]: userLists[listName].filter(el => el !== text)}
+  writeFile(`${dbPath}/lists/${password}.json`, JSON.stringify(userLists), (error) => {
+    if (error) {
+      console.log('An error has occurred ', error);
+      return;
+    } else {
+      showList(bot, chat_id, listName, userLists)
+    }
+  });
 }
 
-export const removeItem = async (bot, chat_id, password, userLists, dbPath, text) => {
+
+export const removeItemByInput = async (bot, chat_id, password, userLists, dbPath, text) => {
   const { newDb, list, item, removedItem } = action('remove', userLists, text)
   if (removedItem) {
     await bot.sendMessage(chat_id, `Вы удалили "${removedItem}" из списка ${list}`)

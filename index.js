@@ -11,8 +11,9 @@ import {
   createNewList, 
   deleteList,
   addItemByButton,
-  addItem,
-  removeItem
+  addItemByInput,
+  removeItemByButton,
+  removeItemByInput
 } from './functions.js'
 
 dotenv.config()
@@ -86,24 +87,57 @@ bot.on("message", async (message) => {
         showList(bot, chat_id, text, userLists)
         return;
       }
+      console.log(user)
 
+      if (user.lastMessage.includes('добавить запись в список')) {
+        addItemByButton(bot, chat_id, user.lastMessage, text, password, userLists, dbPath);
+        saveLastMessage(`${dbPath}/users/${chat_id}.json`, user, '')
+        return;
+      }
+      
       // ADD ITEM BY BUTTON
-      // if (user.lastMessage.includes('добавить запись в список')) {    
-      //   addItemByButton(bot, chat_id, user.lastMessage, password, userLists, dbPath)
-      //   return;
-      // }
-  
-      // ADD ITEM BY TYPING IN
-      if (text.includes('добавить')) {    
-        console.log(user.lastMessage)
-        addItem(bot, chat_id, password, userLists, dbPath, text)
+      if (text.includes('добавить запись в список')) {
+        const options = {
+          reply_markup: JSON.stringify({
+            remove_keyboard: true
+          })
+        };
+        bot.sendMessage(chat_id, 'Введите запись', options)
         saveLastMessage(`${dbPath}/users/${chat_id}.json`, user, text)
         return;
       }
   
-      // REMOVE ITEM FROM A LIST
-      if (text.includes('удалить')) {    
-        removeItem(bot, chat_id, password, userLists, dbPath, text)
+      // ADD ITEM BY TYPING IN
+      if (text.includes('добавить')) {    
+        console.log(user.lastMessage)
+        addItemByInput(bot, chat_id, password, userLists, dbPath, text)
+        saveLastMessage(`${dbPath}/users/${chat_id}.json`, user, text)
+        return;
+      }
+
+
+      if (user.lastMessage.includes('удалить запись из списка')) {
+        removeItemByButton(bot, chat_id, user.lastMessage, text, password, userLists, dbPath);
+        saveLastMessage(`${dbPath}/users/${chat_id}.json`, user, '')
+        return;
+      }
+
+      // REMOVE ITEM BY BUTTON
+      if (text.includes('удалить запись из списка')) {
+        const listName = text.replace('удалить запись из списка ', '')
+        const options = {
+          reply_markup: JSON.stringify({
+            keyboard: userLists[listName].map(entry => [{text: entry}])
+          })
+        };
+        bot.sendMessage(chat_id, 'Выберите запись', options)
+        saveLastMessage(`${dbPath}/users/${chat_id}.json`, user, text)
+        return;
+      }
+  
+      // REMOVE ITEM BY INPUT
+      if (text.includes('удалить запись из списка')) {    
+        removeItemByInput(bot, chat_id, password, userLists, dbPath, text)
         saveLastMessage(`${dbPath}/users/${chat_id}.json`, user, text)
         return;
       }
